@@ -57,15 +57,29 @@ void AMyCharacter::ShootGrapplingHook()
 
 	FHitResult HitResult;
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
+	float GrappleRadius = 50.0f;
+	FCollisionShape SphereShape = FCollisionShape::MakeSphere(GrappleRadius);
+	
+	bool bHit = GetWorld()->SweepSingleByChannel(
 		HitResult,
 		StartLocation,
 		EndLocation,
-		ECC_Visibility
+		FQuat::Identity,
+		ECC_Visibility,
+		SphereShape
 	);
 
-	// Draw Raycas line for debugging purposes. Green if it hits something, red if it doesn't.  
-	FColor LineColor = bHit ? FColor::Green : FColor::Red;
-	DrawDebugLine(GetWorld(), StartLocation, EndLocation, LineColor, false, 2.0f, 0, 2.0f);
+	if (bHit)
+	{
+		// Draw a green sphere exactly where the grapple struck the surface
+		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, GrappleRadius, 12, FColor::Green, false, 2.0f);
+		// Draw a line to show the path
+		DrawDebugLine(GetWorld(), StartLocation, HitResult.ImpactPoint, FColor::Green, false, 2.0f, 0, 2.0f);
+	}
+	else
+	{
+		// Draw a red line showing a total miss
+		DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Red, false, 2.0f, 0, 2.0f);
+	}
 }
 
