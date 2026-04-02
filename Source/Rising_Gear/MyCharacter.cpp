@@ -22,6 +22,7 @@ AMyCharacter::AMyCharacter()
 // Called when the game starts or when spawned
 void AMyCharacter::BeginPlay()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("BEgin playu!"));
 	Super::BeginPlay();
 	
 }
@@ -48,6 +49,8 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 void AMyCharacter::ShootGrapplingHook()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("TEST!"));
+
 	FVector StartLocation = FirstPersonCameraComponent->GetComponentLocation();
 
 	FVector ForwardDirection = FirstPersonCameraComponent->GetForwardVector();
@@ -71,6 +74,7 @@ void AMyCharacter::ShootGrapplingHook()
 
 	if (bHit)
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Test Message!"));
 		// Draw a green sphere exactly where the grapple struck the surface
 		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, GrappleRadius, 12, FColor::Green, false, 2.0f);
 		// Draw a line to show the path
@@ -78,6 +82,7 @@ void AMyCharacter::ShootGrapplingHook()
 	}
 	else
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Test Message 2!"));
 		// Draw a red line showing a total miss
 		DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Red, false, 2.0f, 0, 2.0f);
 	}
