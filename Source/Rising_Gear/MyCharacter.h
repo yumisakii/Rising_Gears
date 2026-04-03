@@ -12,32 +12,54 @@ class RISING_GEAR_API AMyCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	AMyCharacter();
+
+	// Core Engine Overrides
+	virtual void Tick(float DeltaTime) override;
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void Jump() override;
 
 protected:
 	virtual void BeginPlay() override;
-	
+
+	// Components
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	class UCameraComponent* FirstPersonCameraComponent;
 
+	// Enhanced Input Actions
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* ShootGrapplingHookAction;
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* DashAction;
+
+	// --- Grappling System ---
 	bool bIsGrappling;
 	FVector GrappleHookLocation;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 	void ShootGrapplingHook();
-
 	void StopGrappling();
+	void HandleGrapplingMovement(float DeltaTime);
 
-	virtual void Jump() override;
+	// --- Dash System ---
 
+	// Dash State
+	bool bIsDashing;
+	bool bCanDash;
+	FVector DashStartLocation;
+	FVector DashDirection;
+	FVector PreviousDashLocation;
+
+	// Dash Configuration
+	float TargetDashDistance = 1500.0f;
+	float DashSpeed = 6000.0f;
+	float DashCooldownDuration = 2.0f;
+
+	// Dash Management
+	struct FTimerHandle DashCooldownTimerHandle;
+
+	void Dash();
+	void HandleDash(float DeltaTime);
+	void StopDash();
+	void ResetDashCooldown();
 };

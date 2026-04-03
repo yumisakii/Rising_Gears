@@ -15,6 +15,8 @@ AMyCharacter::AMyCharacter()
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
 
 	bIsGrappling = false;
+	bIsDashing = false;
+	bCanDash = true;
 }
 
 void AMyCharacter::BeginPlay()
@@ -26,35 +28,8 @@ void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-
-	// Handle Grappling
-	if (bIsGrappling)
-	{
-		FVector HookDirection = (GrappleHookLocation - GetActorLocation()).GetSafeNormal();
-	
-		FVector CurrentVelocity = GetCharacterMovement()->Velocity;
-
-		float CustomGravity = 1500.0f; // Default is 980, but 1500 is better for a heavier and snapier feeling
-		CurrentVelocity += FVector(0.f, 0.f, -CustomGravity * DeltaTime);
-
-		// Puts the player in a 2D plane for a pendulum effect
-		FVector TangentVelocity = FVector::VectorPlaneProject(CurrentVelocity, HookDirection);
-
-		// To slowly pull the player toward the hook as he swings
-		float ReelInSpeed = 400.0f;
-		TangentVelocity += HookDirection * ReelInSpeed;
-
-		
-		GetCharacterMovement()->Velocity = TangentVelocity;
-
-		// detache if too far away
-		float DistanceToHook = FVector::Dist(GetActorLocation(), GrappleHookLocation);
-		if (DistanceToHook < 150.0f)
-		{
-			StopGrappling();
-		}
-	}
-
+	HandleGrapplingMovement(DeltaTime);
+	HandleDash(DeltaTime);
 }
 
 void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -64,6 +39,7 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(ShootGrapplingHookAction, ETriggerEvent::Started, this, &AMyCharacter::ShootGrapplingHook);
+		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &AMyCharacter::Dash);
 	}
 }
 
@@ -139,4 +115,101 @@ void AMyCharacter::Jump()
 	}
 }
 
+void AMyCharacter::HandleGrapplingMovement(float DeltaTime)
+{
+	if (bIsGrappling)
+	{
+		FVector HookDirection = (GrappleHookLocation - GetActorLocation()).GetSafeNormal();
+
+		FVector CurrentVelocity = GetCharacterMovement()->Velocity;
+
+		float CustomGravity = 1500.0f; // Default is 980, but 1500 is better for a heavier and snapier feeling
+		CurrentVelocity += FVector(0.f, 0.f, -CustomGravity * DeltaTime);
+
+		// Puts the player in a 2D plane for a pendulum effect
+		FVector TangentVelocity = FVector::VectorPlaneProject(CurrentVelocity, HookDirection);
+
+		// To slowly pull the player toward the hook as he swings
+		float ReelInSpeed = 400.0f;
+		TangentVelocity += HookDirection * ReelInSpeed;
+
+
+		GetCharacterMovement()->Velocity = TangentVelocity;
+
+		// detache if too far away
+		float DistanceToHook = FVector::Dist(GetActorLocation(), GrappleHookLocation);
+		if (DistanceToHook < 150.0f)
+		{
+			StopGrappling();
+		}
+	}
+}
+
+
+#pragma region Dash System
+void AMyCharacter::Dash()
+{
+	if (bIsDashing || !bCanDash) return;
+
+	if (bIsGrappling) StopGrappling();
+
+	bCanDash = false;
+	bIsDashing = true;
+
+	DashStartLocation = GetActorLocation();
+	PreviousDashLocation = DashStartLocation - 2.1f;
+	DashDirection = FirstPersonCameraComponent->GetForwardVector();
+
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+}
+
+void AMyCharacter::StopDash()
+{
+	if (bIsDashing)
+	{
+		bIsDashing = false;
+		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+		GetCharacterMovement()->Velocity = FVector::ZeroVector;
+
+		GetWorldTimerManager().SetTimer(DashCooldownTimerHandle, this, &AMyCharacter::ResetDashCooldown, DashCooldownDuration, false);
+	}
+}
+
+void AMyCharacter::ResetDashCooldown()
+{
+	bCanDash = true;
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Cyan, TEXT("Dash Ready!"));
+	}
+}
+
+void AMyCharacter::HandleDash(float DeltaTime)
+{
+	if (bIsDashing)
+	{
+		GetCharacterMovement()->Velocity = DashDirection * DashSpeed;
+
+		float TotalDistanceTraveled = FVector::Dist(DashStartLocation, GetActorLocation());
+		if (TotalDistanceTraveled >= TargetDashDistance)
+		{
+			StopDash();
+			return;
+		}
+
+		FVector CurrentLocation = GetActorLocation();
+
+		float DistanceMovedThisFrame = FVector::Dist(CurrentLocation, PreviousDashLocation);
+
+		if (DistanceMovedThisFrame < 2.0f)
+		{
+			StopDash();
+			return;
+		}
+
+		PreviousDashLocation = CurrentLocation;
+	}
+}
+#pragma endregion
 // GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Test Message!"));
