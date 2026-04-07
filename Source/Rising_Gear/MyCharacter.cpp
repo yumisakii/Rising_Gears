@@ -17,6 +17,8 @@ AMyCharacter::AMyCharacter()
 	bIsGrappling = false;
 	bIsDashing = false;
 	bCanDash = true;
+
+	CurrentGrappleTarget = nullptr;
 }
 
 void AMyCharacter::BeginPlay()
@@ -27,6 +29,8 @@ void AMyCharacter::BeginPlay()
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	UpdateGrappleTarget();
 
 	HandleGrapplingMovement(DeltaTime);
 	HandleDash(DeltaTime);
@@ -43,35 +47,59 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	}
 }
 
-void AMyCharacter::ShootGrapplingHook()
+void AMyCharacter::Jump()
 {
-	
+	if (bIsGrappling)
+	{
+		StopGrappling();
+
+		FVector ForwardBoost = FirstPersonCameraComponent->GetForwardVector() * 1500.0f;
+		FVector UpwardBoost = FVector(0.f, 0.f, 1000.0f);
+		FVector TotalLaunchVelocity = ForwardBoost + UpwardBoost;
+
+		LaunchCharacter(TotalLaunchVelocity, true, true);
+	}
+	else
+	{
+		Super::Jump();
+	}
+}
 
 
-	FVector StartLocation = FirstPersonCameraComponent->GetComponentLocation();
+#pragma region Grappling Hook System
+
+bool AMyCharacter::PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutStartLocation, FVector& OutEndLocation)
+{
+	OutStartLocation = FirstPersonCameraComponent->GetComponentLocation();
 	FVector ForwardDirection = FirstPersonCameraComponent->GetForwardVector();
 
 	float MaxGrappleDistance = 5000.0f;
-	FVector EndLocation = StartLocation + (ForwardDirection * MaxGrappleDistance);
+	OutEndLocation = OutStartLocation + (ForwardDirection * MaxGrappleDistance);
 
-	FHitResult HitResult;
-	float GrappleRadius = 200.0f;
+	float GrappleRadius = 300.0f;
 	FCollisionShape SphereShape = FCollisionShape::MakeSphere(GrappleRadius);
-	
+
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 
-	bool bHit = GetWorld()->SweepSingleByChannel(
-		HitResult,
-		StartLocation,
-		EndLocation,
+	return GetWorld()->SweepSingleByChannel(
+		OutHitResult,
+		OutStartLocation,
+		OutEndLocation,
 		FQuat::Identity,
 		ECC_GameTraceChannel2,
 		SphereShape,
 		QueryParams
 	);
+}
 
-	if (bHit)
+void AMyCharacter::ShootGrapplingHook()
+{
+	FHitResult HitResult;
+	FVector StartLocation;
+	FVector EndLocation;
+
+	if (PerformGrappleSweep(HitResult, StartLocation, EndLocation))
 	{
 		bIsGrappling = true;
 		GrappleHookLocation = HitResult.ImpactPoint;
@@ -79,7 +107,7 @@ void AMyCharacter::ShootGrapplingHook()
 		GetCharacterMovement()->Velocity = FVector::ZeroVector;
 
 		// Draw Debug Stuff
-		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, GrappleRadius, 12, FColor::Green, false, 2.0f);
+		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 300, 12, FColor::Green, false, 2.0f);
 		DrawDebugLine(GetWorld(), StartLocation, HitResult.ImpactPoint, FColor::Green, false, 2.0f, 0, 2.0f);
 	}
 	else
@@ -94,24 +122,6 @@ void AMyCharacter::StopGrappling()
 	{
 		bIsGrappling = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
-	}
-}
-
-void AMyCharacter::Jump()
-{	
-	if (bIsGrappling)
-	{
-		StopGrappling();
-
-		FVector ForwardBoost = FirstPersonCameraComponent->GetForwardVector() * 1500.0f;
-		FVector UpwardBoost = FVector(0.f, 0.f, 1000.0f);
-		FVector TotalLaunchVelocity = ForwardBoost + UpwardBoost;
-
-		LaunchCharacter(TotalLaunchVelocity, true, true);
-	}
-	else
-	{
-		Super::Jump();
 	}
 }
 
@@ -130,7 +140,7 @@ void AMyCharacter::HandleGrapplingMovement(float DeltaTime)
 		FVector TangentVelocity = FVector::VectorPlaneProject(CurrentVelocity, HookDirection);
 
 		// To slowly pull the player toward the hook as he swings
-		float ReelInSpeed = 400.0f;
+		float ReelInSpeed = 300.0f;
 		TangentVelocity += HookDirection * ReelInSpeed;
 
 
@@ -145,6 +155,23 @@ void AMyCharacter::HandleGrapplingMovement(float DeltaTime)
 	}
 }
 
+void AMyCharacter::UpdateGrappleTarget()
+{
+	FHitResult HitResult;
+	FVector StartLocation;
+	FVector EndLocation;
+
+	if (PerformGrappleSweep(HitResult, StartLocation, EndLocation))
+	{
+		CurrentGrappleTarget = HitResult.GetActor();
+	}
+	else
+	{
+		CurrentGrappleTarget = nullptr;
+	}
+}
+
+#pragma endregion
 
 #pragma region Dash System
 void AMyCharacter::Dash()
@@ -178,11 +205,6 @@ void AMyCharacter::StopDash()
 void AMyCharacter::ResetDashCooldown()
 {
 	bCanDash = true;
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Cyan, TEXT("Dash Ready!"));
-	}
 }
 
 void AMyCharacter::HandleDash(float DeltaTime)
@@ -212,4 +234,5 @@ void AMyCharacter::HandleDash(float DeltaTime)
 	}
 }
 #pragma endregion
+
 // GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Test Message!"));

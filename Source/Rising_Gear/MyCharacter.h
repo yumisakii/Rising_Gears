@@ -34,12 +34,17 @@ protected:
 	class UInputAction* DashAction;
 
 	// --- Grappling System ---
+	UPROPERTY(BlueprintReadOnly, Category = "Grappling")
+	class AActor* CurrentGrappleTarget;
+
 	bool bIsGrappling;
 	FVector GrappleHookLocation;
-
+	
+	bool PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutStartLocation, FVector& OutEndLocation);
 	void ShootGrapplingHook();
 	void StopGrappling();
 	void HandleGrapplingMovement(float DeltaTime);
+	void UpdateGrappleTarget();
 
 	// --- Dash System ---
 
