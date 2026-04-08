@@ -30,6 +30,12 @@ void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (GetCharacterMovement()->IsFalling()) TimeSinceLeftGround += DeltaTime;
+	else TimeSinceLeftGround = 0.f;
+
+
+
+
 	UpdateGrappleTarget();
 
 	HandleGrapplingMovement(DeltaTime);
@@ -49,15 +55,27 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 void AMyCharacter::Jump()
 {
-	if (bIsGrappling)
+	if (bIsGrappling || bIsDashing)
 	{
 		StopGrappling();
+		StopDash();
 
-		FVector ForwardBoost = FirstPersonCameraComponent->GetForwardVector() * 1500.0f;
+		FVector ForwardBoost = FirstPersonCameraComponent->GetForwardVector();
+		ForwardBoost.Z = 0.f;
+		ForwardBoost = ForwardBoost.GetSafeNormal();
+		ForwardBoost *= 1500;
+
 		FVector UpwardBoost = FVector(0.f, 0.f, 1000.0f);
 		FVector TotalLaunchVelocity = ForwardBoost + UpwardBoost;
 
 		LaunchCharacter(TotalLaunchVelocity, true, true);
+	}
+	else if (TimeSinceLeftGround <= 0.15f && GetCharacterMovement()->Velocity.Z <= 0.0f)
+	{
+		float StandardJumpForce = GetCharacterMovement()->JumpZVelocity;
+
+		LaunchCharacter(FVector(0.f, 0.f, StandardJumpForce), false, true);
+		TimeSinceLeftGround = 999.0f;
 	}
 	else
 	{
@@ -146,7 +164,7 @@ void AMyCharacter::HandleGrapplingMovement(float DeltaTime)
 
 		GetCharacterMovement()->Velocity = TangentVelocity;
 
-		// detache if too far away
+		// detache if too close
 		float DistanceToHook = FVector::Dist(GetActorLocation(), GrappleHookLocation);
 		if (DistanceToHook < 150.0f)
 		{
@@ -196,7 +214,9 @@ void AMyCharacter::StopDash()
 	{
 		bIsDashing = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
-		GetCharacterMovement()->Velocity = FVector::ZeroVector;
+
+		float ExitDashSpeed = 1500.0f;
+		GetCharacterMovement()->Velocity = DashDirection * ExitDashSpeed;
 
 		GetWorldTimerManager().SetTimer(DashCooldownTimerHandle, this, &AMyCharacter::ResetDashCooldown, DashCooldownDuration, false);
 	}

@@ -33,6 +33,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* DashAction;
 
+	// --- Jump System ---
+	float TimeSinceLeftGround;
+
+
 	// --- Grappling System ---
 	UPROPERTY(BlueprintReadOnly, Category = "Grappling")
 	class AActor* CurrentGrappleTarget;
