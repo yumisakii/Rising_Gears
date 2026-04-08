@@ -60,7 +60,7 @@ protected:
 	FVector PreviousDashLocation;
 
 	// Dash Configuration
-	float TargetDashDistance = 1500.0f;
+	float TargetDashDistance = 600.0f;
 	float DashSpeed = 6000.0f;
 	float DashCooldownDuration = 2.0f;
 

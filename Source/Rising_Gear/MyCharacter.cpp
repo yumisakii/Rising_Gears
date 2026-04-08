@@ -65,7 +65,7 @@ void AMyCharacter::Jump()
 		ForwardBoost = ForwardBoost.GetSafeNormal();
 		ForwardBoost *= 1500;
 
-		FVector UpwardBoost = FVector(0.f, 0.f, 1000.0f);
+		FVector UpwardBoost = FVector(0.f, 0.f, 500.0f);
 		FVector TotalLaunchVelocity = ForwardBoost + UpwardBoost;
 
 		LaunchCharacter(TotalLaunchVelocity, true, true);
@@ -91,7 +91,7 @@ bool AMyCharacter::PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutSta
 	OutStartLocation = FirstPersonCameraComponent->GetComponentLocation();
 	FVector ForwardDirection = FirstPersonCameraComponent->GetForwardVector();
 
-	float MaxGrappleDistance = 5000.0f;
+	float MaxGrappleDistance = 1000.0f;
 	OutEndLocation = OutStartLocation + (ForwardDirection * MaxGrappleDistance);
 
 	float GrappleRadius = 300.0f;
@@ -215,7 +215,7 @@ void AMyCharacter::StopDash()
 		bIsDashing = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
 
-		float ExitDashSpeed = 1500.0f;
+		float ExitDashSpeed = 800.0f;
 		GetCharacterMovement()->Velocity = DashDirection * ExitDashSpeed;
 
 		GetWorldTimerManager().SetTimer(DashCooldownTimerHandle, this, &AMyCharacter::ResetDashCooldown, DashCooldownDuration, false);
