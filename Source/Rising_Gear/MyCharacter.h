@@ -33,16 +33,25 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* DashAction;
 
+
 	// --- Jump System ---
 	float TimeSinceLeftGround;
+	float JumpBufferTimeLeft = 0.0f;
+	virtual void Landed(const FHitResult& Hit) override;
 
 
 	// --- Grappling System ---
 	UPROPERTY(BlueprintReadOnly, Category = "Grappling")
 	class AActor* CurrentGrappleTarget;
 
+	// Temp cable for visual
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grappling")
+	class UCableComponent* GrappleCable;
+
 	bool bIsGrappling;
 	FVector GrappleHookLocation;
+
+	float CurrentRopeLength;
 	
 	bool PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutStartLocation, FVector& OutEndLocation);
 	void ShootGrapplingHook();
@@ -60,7 +69,7 @@ protected:
 	FVector PreviousDashLocation;
 
 	// Dash Configuration
-	float TargetDashDistance = 600.0f;
+	float TargetDashDistance = 450.0f;
 	float DashSpeed = 6000.0f;
 	float DashCooldownDuration = 2.0f;
 

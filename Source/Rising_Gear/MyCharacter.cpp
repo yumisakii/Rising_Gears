@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputAction.h"
 #include "DrawDebugHelpers.h"
+#include "CableComponent.h"
 
 AMyCharacter::AMyCharacter()
 {
@@ -19,11 +20,19 @@ AMyCharacter::AMyCharacter()
 	bCanDash = true;
 
 	CurrentGrappleTarget = nullptr;
+
+
+	//Temps Cable
+	GrappleCable = CreateDefaultSubobject<UCableComponent>(TEXT("GrappleCable"));
+	GrappleCable->SetupAttachment(RootComponent);
 }
 
 void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// TEMP CABLE
+	GrappleCable->SetHiddenInGame(true);
 }
 
 void AMyCharacter::Tick(float DeltaTime)
@@ -33,7 +42,10 @@ void AMyCharacter::Tick(float DeltaTime)
 	if (GetCharacterMovement()->IsFalling()) TimeSinceLeftGround += DeltaTime;
 	else TimeSinceLeftGround = 0.f;
 
-
+	if (JumpBufferTimeLeft > 0.0f)
+	{
+		JumpBufferTimeLeft -= DeltaTime;
+	}
 
 
 	UpdateGrappleTarget();
@@ -63,23 +75,38 @@ void AMyCharacter::Jump()
 		FVector ForwardBoost = FirstPersonCameraComponent->GetForwardVector();
 		ForwardBoost.Z = 0.f;
 		ForwardBoost = ForwardBoost.GetSafeNormal();
-		ForwardBoost *= 1500;
+		ForwardBoost *= 750;
 
 		FVector UpwardBoost = FVector(0.f, 0.f, 500.0f);
 		FVector TotalLaunchVelocity = ForwardBoost + UpwardBoost;
 
 		LaunchCharacter(TotalLaunchVelocity, true, true);
 	}
-	else if (TimeSinceLeftGround <= 0.15f && GetCharacterMovement()->Velocity.Z <= 0.0f)
-	{
-		float StandardJumpForce = GetCharacterMovement()->JumpZVelocity;
+	//else if (TimeSinceLeftGround <= 0.15f && GetCharacterMovement()->Velocity.Z <= 0.0f)
+	//{
+	//	float StandardJumpForce = GetCharacterMovement()->JumpZVelocity;
 
-		LaunchCharacter(FVector(0.f, 0.f, StandardJumpForce), false, true);
-		TimeSinceLeftGround = 999.0f;
-	}
+	//	LaunchCharacter(FVector(0.f, 0.f, StandardJumpForce), false, true);
+	//	TimeSinceLeftGround = 999.0f;
+	//}
 	else
 	{
+		if (GetCharacterMovement()->IsFalling())
+		{
+			JumpBufferTimeLeft = 2.f;
+		}
 		Super::Jump();
+	}
+}
+
+void AMyCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	if (JumpBufferTimeLeft > 0.0f)
+	{
+		JumpBufferTimeLeft = 0.0f;
+		Jump();
 	}
 }
 
@@ -121,16 +148,23 @@ void AMyCharacter::ShootGrapplingHook()
 	{
 		bIsGrappling = true;
 		GrappleHookLocation = HitResult.ImpactPoint;
-		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-		GetCharacterMovement()->Velocity = FVector::ZeroVector;
+		CurrentRopeLength = FVector::Distance(GetActorLocation(), GrappleHookLocation);
 
-		// Draw Debug Stuff
-		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 300, 12, FColor::Green, false, 2.0f);
-		DrawDebugLine(GetWorld(), StartLocation, HitResult.ImpactPoint, FColor::Green, false, 2.0f, 0, 2.0f);
-	}
-	else
-	{
-		DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Red, false, 2.0f, 0, 2.0f);
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		FVector ForwardDirection = FirstPersonCameraComponent->GetForwardVector();
+		
+		float InitialGrappleBoost = 1200.0f; 
+		
+		FVector VerticalPop = FVector(0.f, 0.f, 400.0f);
+		GetCharacterMovement()->Velocity += (ForwardDirection * InitialGrappleBoost) + VerticalPop;
+
+
+		// Temp Cable visual
+		if (GrappleCable && CurrentGrappleTarget)
+		{
+			GrappleCable->SetHiddenInGame(false);
+			GrappleCable->SetAttachEndToComponent(CurrentGrappleTarget->GetRootComponent());
+		}
 	}
 }
 
@@ -140,6 +174,12 @@ void AMyCharacter::StopGrappling()
 	{
 		bIsGrappling = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+
+		// Temp Cable visual
+		if (GrappleCable)
+		{
+			GrappleCable->SetHiddenInGame(true);
+		}
 	}
 }
 
@@ -158,18 +198,14 @@ void AMyCharacter::HandleGrapplingMovement(float DeltaTime)
 		FVector TangentVelocity = FVector::VectorPlaneProject(CurrentVelocity, HookDirection);
 
 		// To slowly pull the player toward the hook as he swings
-		float ReelInSpeed = 300.0f;
+		float ReelInSpeed = 600.0f;
+
+		float DistanceToHook = FVector::Dist(GetActorLocation(), GrappleHookLocation);
+		if (DistanceToHook < (CurrentRopeLength - 200.f)) ReelInSpeed = 0.f;
+
 		TangentVelocity += HookDirection * ReelInSpeed;
 
-
 		GetCharacterMovement()->Velocity = TangentVelocity;
-
-		// detache if too close
-		float DistanceToHook = FVector::Dist(GetActorLocation(), GrappleHookLocation);
-		if (DistanceToHook < 150.0f)
-		{
-			StopGrappling();
-		}
 	}
 }
 
