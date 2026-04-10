@@ -64,13 +64,14 @@ void AMyCharacter::UpdateCameraFOV(float DeltaTime)
 
 	FVector2D SpeedRange(600.0f, 3000.0f);
 
-	FVector2D FOVRange(120.0f, 180.0f);
+	FVector2D FOVRange(90.0f, 160.0f);
 
 	float TargetFOV = FMath::GetMappedRangeValueClamped(SpeedRange, FOVRange, CurrentSpeed);
 	float CurrentFOV = FirstPersonCameraComponent->FieldOfView;
 	float InterpSpeed = 10.0f;
 
 	float SmoothedFOV = FMath::FInterpTo(CurrentFOV, TargetFOV, DeltaTime, InterpSpeed);
+	FirstPersonCameraComponent->SetFieldOfView(SmoothedFOV);
 }
 
 #pragma region Jump Override System
@@ -217,6 +218,12 @@ void AMyCharacter::HandleGrapplingMovement(float DeltaTime)
 
 		// Puts the player in a 2D plane for a pendulum effect
 		FVector TangentVelocity = FVector::VectorPlaneProject(CurrentVelocity, HookDirection);
+
+		// Add forward momentum
+		FVector LookDirection = FirstPersonCameraComponent->GetForwardVector();
+		FVector SwingForwardDirection = FVector::VectorPlaneProject(LookDirection, HookDirection).GetSafeNormal();
+		float SwingThrust = 1000.0f;
+		TangentVelocity += SwingForwardDirection * (SwingThrust * DeltaTime);
 
 		// To slowly pull the player toward the hook as he swings
 		float ReelInSpeed = 600.0f;
