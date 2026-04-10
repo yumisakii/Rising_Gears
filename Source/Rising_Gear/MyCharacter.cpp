@@ -82,18 +82,18 @@ void AMyCharacter::Jump()
 
 		LaunchCharacter(TotalLaunchVelocity, true, true);
 	}
-	//else if (TimeSinceLeftGround <= 0.15f && GetCharacterMovement()->Velocity.Z <= 0.0f)
-	//{
-	//	float StandardJumpForce = GetCharacterMovement()->JumpZVelocity;
+	else if (TimeSinceLeftGround <= 0.15f && GetCharacterMovement()->Velocity.Z <= 0.0f)
+	{
+		float StandardJumpForce = GetCharacterMovement()->JumpZVelocity;
 
-	//	LaunchCharacter(FVector(0.f, 0.f, StandardJumpForce), false, true);
-	//	TimeSinceLeftGround = 999.0f;
-	//}
+		LaunchCharacter(FVector(0.f, 0.f, StandardJumpForce), false, true);
+		TimeSinceLeftGround = 999.0f;
+	}
 	else
 	{
 		if (GetCharacterMovement()->IsFalling())
 		{
-			JumpBufferTimeLeft = 2.f;
+			JumpBufferTimeLeft = 0.15f;
 		}
 		Super::Jump();
 	}
@@ -106,7 +106,9 @@ void AMyCharacter::Landed(const FHitResult& Hit)
 	if (JumpBufferTimeLeft > 0.0f)
 	{
 		JumpBufferTimeLeft = 0.0f;
-		Jump();
+
+		float StandardJumpForce = GetCharacterMovement()->JumpZVelocity;
+		LaunchCharacter(FVector(0.f, 0.f, StandardJumpForce), false, true);
 	}
 }
 
