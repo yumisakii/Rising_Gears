@@ -34,10 +34,15 @@ protected:
 	class UInputAction* DashAction;
 
 
+	// Fov Camera
+	void UpdateCameraFOV(float DeltaTime);
+
+
 	// --- Jump System ---
 	float TimeSinceLeftGround;
 	float JumpBufferTimeLeft = 0.0f;
 	virtual void Landed(const FHitResult& Hit) override;
+	void UpdateJumpValues(float DeltaTime);
 
 
 	// --- Grappling System ---
@@ -47,6 +52,7 @@ protected:
 	// Temp cable for visual
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grappling")
 	class UCableComponent* GrappleCable;
+	///
 
 	bool bIsGrappling;
 	FVector GrappleHookLocation;

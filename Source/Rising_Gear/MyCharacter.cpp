@@ -39,17 +39,10 @@ void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (GetCharacterMovement()->IsFalling()) TimeSinceLeftGround += DeltaTime;
-	else TimeSinceLeftGround = 0.f;
-
-	if (JumpBufferTimeLeft > 0.0f)
-	{
-		JumpBufferTimeLeft -= DeltaTime;
-	}
-
+	UpdateCameraFOV(DeltaTime);
+	UpdateJumpValues(DeltaTime);
 
 	UpdateGrappleTarget();
-
 	HandleGrapplingMovement(DeltaTime);
 	HandleDash(DeltaTime);
 }
@@ -65,6 +58,22 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	}
 }
 
+void AMyCharacter::UpdateCameraFOV(float DeltaTime)
+{
+	float CurrentSpeed = GetCharacterMovement()->Velocity.Size();
+
+	FVector2D SpeedRange(600.0f, 3000.0f);
+
+	FVector2D FOVRange(120.0f, 180.0f);
+
+	float TargetFOV = FMath::GetMappedRangeValueClamped(SpeedRange, FOVRange, CurrentSpeed);
+	float CurrentFOV = FirstPersonCameraComponent->FieldOfView;
+	float InterpSpeed = 10.0f;
+
+	float SmoothedFOV = FMath::FInterpTo(CurrentFOV, TargetFOV, DeltaTime, InterpSpeed);
+}
+
+#pragma region Jump Override System
 void AMyCharacter::Jump()
 {
 	if (bIsGrappling || bIsDashing)
@@ -112,9 +121,19 @@ void AMyCharacter::Landed(const FHitResult& Hit)
 	}
 }
 
+void AMyCharacter::UpdateJumpValues(float DeltaTime)
+{
+	if (GetCharacterMovement()->IsFalling()) TimeSinceLeftGround += DeltaTime;
+	else TimeSinceLeftGround = 0.f;
+
+	if (JumpBufferTimeLeft > 0.0f)
+	{
+		JumpBufferTimeLeft -= DeltaTime;
+	}
+}
+#pragma endregion
 
 #pragma region Grappling Hook System
-
 bool AMyCharacter::PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutStartLocation, FVector& OutEndLocation)
 {
 	OutStartLocation = FirstPersonCameraComponent->GetComponentLocation();
@@ -226,7 +245,6 @@ void AMyCharacter::UpdateGrappleTarget()
 		CurrentGrappleTarget = nullptr;
 	}
 }
-
 #pragma endregion
 
 #pragma region Dash System
