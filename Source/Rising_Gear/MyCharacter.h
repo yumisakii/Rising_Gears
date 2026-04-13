@@ -19,6 +19,10 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void Jump() override;
 
+	// --- Grappling System ---
+	UFUNCTION(BlueprintImplementableEvent, Category = "Grappling")
+	void OnUpdateGrappleRope(FVector StartLocation, FVector EndLocation);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -33,10 +37,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* DashAction;
 
-
 	// Fov Camera
 	void UpdateCameraFOV(float DeltaTime);
-
 
 	// --- Jump System ---
 	float TimeSinceLeftGround;
@@ -44,21 +46,24 @@ protected:
 	virtual void Landed(const FHitResult& Hit) override;
 	void UpdateJumpValues(float DeltaTime);
 
-
 	// --- Grappling System ---
 	UPROPERTY(BlueprintReadOnly, Category = "Grappling")
 	class AActor* CurrentGrappleTarget;
 
-	// Temp cable for visual
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grappling")
-	class UCableComponent* GrappleCable;
-	///
+	UPROPERTY(EditDefaultsOnly, Category = "Grappling")
+	TSubclassOf<AActor> GrappleRopeClass;
+
+	UPROPERTY(BlueprintReadOnly)
+	AActor* CurrentGrappleRope;
 
 	bool bIsGrappling;
 	FVector GrappleHookLocation;
 
 	float CurrentRopeLength;
 	
+	float BaseForwardMomentumForce = 1000.f;
+	float CurrentForwardMomentumForce;
+
 	bool PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutStartLocation, FVector& OutEndLocation);
 	void ShootGrapplingHook();
 	void StopGrappling();

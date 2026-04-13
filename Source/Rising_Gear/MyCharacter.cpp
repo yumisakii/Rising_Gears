@@ -20,19 +20,11 @@ AMyCharacter::AMyCharacter()
 	bCanDash = true;
 
 	CurrentGrappleTarget = nullptr;
-
-
-	//Temps Cable
-	GrappleCable = CreateDefaultSubobject<UCableComponent>(TEXT("GrappleCable"));
-	GrappleCable->SetupAttachment(RootComponent);
 }
 
 void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// TEMP CABLE
-	GrappleCable->SetHiddenInGame(true);
 }
 
 void AMyCharacter::Tick(float DeltaTime)
@@ -180,12 +172,11 @@ void AMyCharacter::ShootGrapplingHook()
 		FVector VerticalPop = FVector(0.f, 0.f, 400.0f);
 		GetCharacterMovement()->Velocity += (ForwardDirection * InitialGrappleBoost) + VerticalPop;
 
+		CurrentForwardMomentumForce = BaseForwardMomentumForce;
 
-		// Temp Cable visual
-		if (GrappleCable && CurrentGrappleTarget)
+		if (GrappleRopeClass)
 		{
-			GrappleCable->SetHiddenInGame(false);
-			GrappleCable->SetAttachEndToComponent(CurrentGrappleTarget->GetRootComponent());
+			CurrentGrappleRope = GetWorld()->SpawnActor<AActor>(GrappleRopeClass, GetActorLocation(), FRotator::ZeroRotator);
 		}
 	}
 }
@@ -196,12 +187,6 @@ void AMyCharacter::StopGrappling()
 	{
 		bIsGrappling = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
-
-		// Temp Cable visual
-		if (GrappleCable)
-		{
-			GrappleCable->SetHiddenInGame(true);
-		}
 	}
 }
 
@@ -220,20 +205,25 @@ void AMyCharacter::HandleGrapplingMovement(float DeltaTime)
 		FVector TangentVelocity = FVector::VectorPlaneProject(CurrentVelocity, HookDirection);
 
 		// Add forward momentum
-		FVector LookDirection = FirstPersonCameraComponent->GetForwardVector();
-		FVector SwingForwardDirection = FVector::VectorPlaneProject(LookDirection, HookDirection).GetSafeNormal();
-		float SwingThrust = 1000.0f;
-		TangentVelocity += SwingForwardDirection * (SwingThrust * DeltaTime);
+		if (CurrentForwardMomentumForce > 0)
+		{
+			FVector LookDirection = FirstPersonCameraComponent->GetForwardVector();
+			FVector SwingForwardDirection = FVector::VectorPlaneProject(LookDirection, HookDirection).GetSafeNormal();
+			TangentVelocity += SwingForwardDirection * (CurrentForwardMomentumForce * DeltaTime);
+
+			CurrentForwardMomentumForce -= BaseForwardMomentumForce * DeltaTime; // Decay over 1 second
+		}
+
 
 		// To slowly pull the player toward the hook as he swings
 		float ReelInSpeed = 600.0f;
-
 		float DistanceToHook = FVector::Dist(GetActorLocation(), GrappleHookLocation);
 		if (DistanceToHook < (CurrentRopeLength - 200.f)) ReelInSpeed = 0.f;
 
 		TangentVelocity += HookDirection * ReelInSpeed;
 
 		GetCharacterMovement()->Velocity = TangentVelocity;
+		OnUpdateGrappleRope(GetActorLocation(), GrappleHookLocation);
 	}
 }
 
