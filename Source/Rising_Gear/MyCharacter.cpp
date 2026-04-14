@@ -154,6 +154,8 @@ bool AMyCharacter::PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutSta
 
 void AMyCharacter::ShootGrapplingHook()
 {
+	if (bIsGrappling) return;
+
 	FHitResult HitResult;
 	FVector StartLocation;
 	FVector EndLocation;
@@ -163,6 +165,12 @@ void AMyCharacter::ShootGrapplingHook()
 		bIsGrappling = true;
 		GrappleHookLocation = HitResult.ImpactPoint;
 		CurrentRopeLength = FVector::Distance(GetActorLocation(), GrappleHookLocation);
+
+		// visuals
+		if (GrappleRopeClass)
+		{
+			CurrentGrappleRope = GetWorld()->SpawnActor<AActor>(GrappleRopeClass, GetActorLocation(), FRotator::ZeroRotator);
+		}
 
 		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 		FVector ForwardDirection = FirstPersonCameraComponent->GetForwardVector();
@@ -176,6 +184,9 @@ void AMyCharacter::ShootGrapplingHook()
 
 		if (GrappleRopeClass)
 		{
+			CurrentGrappleRope->Destroy();
+			CurrentGrappleRope = nullptr;
+
 			CurrentGrappleRope = GetWorld()->SpawnActor<AActor>(GrappleRopeClass, GetActorLocation(), FRotator::ZeroRotator);
 		}
 	}
@@ -187,6 +198,13 @@ void AMyCharacter::StopGrappling()
 	{
 		bIsGrappling = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+
+		//visuals
+		if (CurrentGrappleRope)
+		{
+			CurrentGrappleRope->Destroy();
+			CurrentGrappleRope = nullptr;
+		}
 	}
 }
 
