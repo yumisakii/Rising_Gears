@@ -61,7 +61,7 @@ protected:
 
 	float CurrentRopeLength;
 	
-	float BaseForwardMomentumForce = 1000.f;
+	float BaseForwardMomentumForce = 1850.f;
 	float CurrentForwardMomentumForce;
 
 	bool PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutStartLocation, FVector& OutEndLocation);
