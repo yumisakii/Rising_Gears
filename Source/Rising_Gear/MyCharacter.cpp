@@ -46,6 +46,7 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(ShootGrapplingHookAction, ETriggerEvent::Started, this, &AMyCharacter::ShootGrapplingHook);
+		EnhancedInputComponent->BindAction(ShootGrapplingHookAction, ETriggerEvent::Completed, this, &AMyCharacter::StopGrappling);
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &AMyCharacter::Dash);
 	}
 }
@@ -163,7 +164,7 @@ void AMyCharacter::ShootGrapplingHook()
 	if (PerformGrappleSweep(HitResult, StartLocation, EndLocation))
 	{
 		bIsGrappling = true;
-		GrappleHookLocation = HitResult.ImpactPoint;
+		GrappleHookLocation = HitResult.GetComponent()->GetComponentLocation();
 		CurrentRopeLength = FVector::Distance(GetActorLocation(), GrappleHookLocation);
 
 		// visuals
@@ -275,7 +276,7 @@ void AMyCharacter::Dash()
 
 	DashStartLocation = GetActorLocation();
 	PreviousDashLocation = DashStartLocation - 2.1f;
-	DashDirection = FirstPersonCameraComponent->GetForwardVector();
+	DashDirection = this->GetActorForwardVector();
 
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 }
