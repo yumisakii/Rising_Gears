@@ -206,7 +206,6 @@ void AMyCharacter::StopGrappling()
 			CurrentGrappleRope->Destroy();
 			CurrentGrappleRope = nullptr;
 		}
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Grapple stopped"));
 	}
 }
 
