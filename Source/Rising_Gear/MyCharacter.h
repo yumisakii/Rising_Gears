@@ -23,6 +23,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Grappling")
 	void OnUpdateGrappleRope(FVector StartLocation, FVector EndLocation);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Grappling")
+	void OnLaunchGrappleRope();
+
 protected:
 	virtual void BeginPlay() override;
 

@@ -189,6 +189,7 @@ void AMyCharacter::ShootGrapplingHook()
 
 			CurrentGrappleRope = GetWorld()->SpawnActor<AActor>(GrappleRopeClass, GetActorLocation(), FRotator::ZeroRotator);
 		}
+		OnLaunchGrappleRope();
 	}
 }
 
