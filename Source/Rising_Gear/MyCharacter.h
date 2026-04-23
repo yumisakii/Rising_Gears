@@ -26,6 +26,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Grappling")
 	void OnLaunchGrappleRope();
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Grappling")
+	void OnStopGrappling();
+
 protected:
 	virtual void BeginPlay() override;
 

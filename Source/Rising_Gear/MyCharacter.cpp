@@ -200,6 +200,8 @@ void AMyCharacter::StopGrappling()
 	{
 		bIsGrappling = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+		
+		OnStopGrappling();
 
 		//visuals
 		if (CurrentGrappleRope)
