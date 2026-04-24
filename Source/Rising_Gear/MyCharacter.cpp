@@ -7,6 +7,7 @@
 #include "InputAction.h"
 #include "DrawDebugHelpers.h"
 #include "CableComponent.h"
+#include <Kismet/GameplayStatics.h>
 
 AMyCharacter::AMyCharacter()
 {
@@ -154,6 +155,7 @@ bool AMyCharacter::PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutSta
 
 void AMyCharacter::ShootGrapplingHook()
 {
+	
 	if (bIsGrappling) return;
 
 	FHitResult HitResult;
@@ -162,6 +164,9 @@ void AMyCharacter::ShootGrapplingHook()
 
 	if (PerformGrappleSweep(HitResult, StartLocation, EndLocation))
 	{
+		
+		UGameplayStatics::PlaySound2D(GetWorld(), GrappleShootSound);
+
 		bIsGrappling = true;
 		GrappleHookLocation = HitResult.ImpactPoint;
 		CurrentRopeLength = FVector::Distance(GetActorLocation(), GrappleHookLocation);
@@ -275,6 +280,8 @@ void AMyCharacter::Dash()
 	DashStartLocation = GetActorLocation();
 	PreviousDashLocation = DashStartLocation - 2.1f;
 	DashDirection = FirstPersonCameraComponent->GetForwardVector();
+
+	UGameplayStatics::PlaySound2D(GetWorld(), DashSound);
 
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 }

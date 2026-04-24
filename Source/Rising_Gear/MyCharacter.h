@@ -78,6 +78,7 @@ protected:
 	FVector DashStartLocation;
 	FVector DashDirection;
 	FVector PreviousDashLocation;
+	
 
 	// Dash Configuration
 	float TargetDashDistance = 450.0f;
@@ -91,4 +92,15 @@ protected:
 	void HandleDash(float DeltaTime);
 	void StopDash();
 	void ResetDashCooldown();
+
+	// --- Sound Effect ---
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* DashSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* GrappleShootSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* GrappleImpactSound;
 };
