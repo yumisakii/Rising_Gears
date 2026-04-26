@@ -1,10 +1,14 @@
 {
 	"FileVersion": 3,
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"EngineAssociation": "5.6",
 =======
 	"EngineAssociation": "{B12F2050-44FF-A1FA-B4B2-79B07B32F26E}",
 >>>>>>> origin/Art_Cinematics
+=======
+	"EngineAssociation": "5.6",
+>>>>>>> mergeV2
 	"Category": "",
 	"Description": "",
 	"Modules": [

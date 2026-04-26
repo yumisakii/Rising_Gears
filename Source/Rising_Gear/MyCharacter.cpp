@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputAction.h"
 #include "DrawDebugHelpers.h"
+#include "CableComponent.h"
 
 AMyCharacter::AMyCharacter()
 {
@@ -30,14 +31,10 @@ void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (GetCharacterMovement()->IsFalling()) TimeSinceLeftGround += DeltaTime;
-	else TimeSinceLeftGround = 0.f;
-
-
-
+	UpdateCameraFOV(DeltaTime);
+	UpdateJumpValues(DeltaTime);
 
 	UpdateGrappleTarget();
-
 	HandleGrapplingMovement(DeltaTime);
 	HandleDash(DeltaTime);
 }
@@ -49,10 +46,28 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(ShootGrapplingHookAction, ETriggerEvent::Started, this, &AMyCharacter::ShootGrapplingHook);
+		EnhancedInputComponent->BindAction(ShootGrapplingHookAction, ETriggerEvent::Completed, this, &AMyCharacter::StopGrappling);
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &AMyCharacter::Dash);
 	}
 }
 
+void AMyCharacter::UpdateCameraFOV(float DeltaTime)
+{
+	float CurrentSpeed = GetCharacterMovement()->Velocity.Size();
+
+	FVector2D SpeedRange(600.0f, 3000.0f);
+
+	FVector2D FOVRange(90.0f, 160.0f);
+
+	float TargetFOV = FMath::GetMappedRangeValueClamped(SpeedRange, FOVRange, CurrentSpeed);
+	float CurrentFOV = FirstPersonCameraComponent->FieldOfView;
+	float InterpSpeed = 10.0f;
+
+	float SmoothedFOV = FMath::FInterpTo(CurrentFOV, TargetFOV, DeltaTime, InterpSpeed);
+	FirstPersonCameraComponent->SetFieldOfView(SmoothedFOV);
+}
+
+#pragma region Jump Override System
 void AMyCharacter::Jump()
 {
 	if (bIsGrappling || bIsDashing)
@@ -63,7 +78,7 @@ void AMyCharacter::Jump()
 		FVector ForwardBoost = FirstPersonCameraComponent->GetForwardVector();
 		ForwardBoost.Z = 0.f;
 		ForwardBoost = ForwardBoost.GetSafeNormal();
-		ForwardBoost *= 1500;
+		ForwardBoost *= 750;
 
 		FVector UpwardBoost = FVector(0.f, 0.f, 500.0f);
 		FVector TotalLaunchVelocity = ForwardBoost + UpwardBoost;
@@ -79,13 +94,40 @@ void AMyCharacter::Jump()
 	}
 	else
 	{
+		if (GetCharacterMovement()->IsFalling())
+		{
+			JumpBufferTimeLeft = 0.15f;
+		}
 		Super::Jump();
 	}
 }
 
+void AMyCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	if (JumpBufferTimeLeft > 0.0f)
+	{
+		JumpBufferTimeLeft = 0.0f;
+
+		float StandardJumpForce = GetCharacterMovement()->JumpZVelocity;
+		LaunchCharacter(FVector(0.f, 0.f, StandardJumpForce), false, true);
+	}
+}
+
+void AMyCharacter::UpdateJumpValues(float DeltaTime)
+{
+	if (GetCharacterMovement()->IsFalling()) TimeSinceLeftGround += DeltaTime;
+	else TimeSinceLeftGround = 0.f;
+
+	if (JumpBufferTimeLeft > 0.0f)
+	{
+		JumpBufferTimeLeft -= DeltaTime;
+	}
+}
+#pragma endregion
 
 #pragma region Grappling Hook System
-
 bool AMyCharacter::PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutStartLocation, FVector& OutEndLocation)
 {
 	OutStartLocation = FirstPersonCameraComponent->GetComponentLocation();
@@ -113,6 +155,8 @@ bool AMyCharacter::PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutSta
 
 void AMyCharacter::ShootGrapplingHook()
 {
+	if (bIsGrappling) return;
+
 	FHitResult HitResult;
 	FVector StartLocation;
 	FVector EndLocation;
@@ -120,17 +164,33 @@ void AMyCharacter::ShootGrapplingHook()
 	if (PerformGrappleSweep(HitResult, StartLocation, EndLocation))
 	{
 		bIsGrappling = true;
-		GrappleHookLocation = HitResult.ImpactPoint;
-		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-		GetCharacterMovement()->Velocity = FVector::ZeroVector;
+		GrappleHookLocation = HitResult.GetComponent()->GetComponentLocation();
+		CurrentRopeLength = FVector::Distance(GetActorLocation(), GrappleHookLocation);
 
-		// Draw Debug Stuff
-		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 300, 12, FColor::Green, false, 2.0f);
-		DrawDebugLine(GetWorld(), StartLocation, HitResult.ImpactPoint, FColor::Green, false, 2.0f, 0, 2.0f);
-	}
-	else
-	{
-		DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Red, false, 2.0f, 0, 2.0f);
+		// visuals
+		if (GrappleRopeClass)
+		{
+			CurrentGrappleRope = GetWorld()->SpawnActor<AActor>(GrappleRopeClass, GetActorLocation(), FRotator::ZeroRotator);
+		}
+
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		FVector ForwardDirection = FirstPersonCameraComponent->GetForwardVector();
+		
+		float InitialGrappleBoost = 1200.0f; 
+		
+		FVector VerticalPop = FVector(0.f, 0.f, 400.0f);
+		GetCharacterMovement()->Velocity += (ForwardDirection * InitialGrappleBoost) + VerticalPop;
+
+		CurrentForwardMomentumForce = BaseForwardMomentumForce;
+
+		if (GrappleRopeClass)
+		{
+			CurrentGrappleRope->Destroy();
+			CurrentGrappleRope = nullptr;
+
+			CurrentGrappleRope = GetWorld()->SpawnActor<AActor>(GrappleRopeClass, GetActorLocation(), FRotator::ZeroRotator);
+		}
+		OnLaunchGrappleRope();
 	}
 }
 
@@ -140,6 +200,15 @@ void AMyCharacter::StopGrappling()
 	{
 		bIsGrappling = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+		
+		OnStopGrappling();
+
+		//visuals
+		if (CurrentGrappleRope)
+		{
+			CurrentGrappleRope->Destroy();
+			CurrentGrappleRope = nullptr;
+		}
 	}
 }
 
@@ -157,19 +226,26 @@ void AMyCharacter::HandleGrapplingMovement(float DeltaTime)
 		// Puts the player in a 2D plane for a pendulum effect
 		FVector TangentVelocity = FVector::VectorPlaneProject(CurrentVelocity, HookDirection);
 
+		// Add forward momentum
+		if (CurrentForwardMomentumForce > 0)
+		{
+			FVector LookDirection = FirstPersonCameraComponent->GetForwardVector();
+			FVector SwingForwardDirection = FVector::VectorPlaneProject(LookDirection, HookDirection).GetSafeNormal();
+			TangentVelocity += SwingForwardDirection * (CurrentForwardMomentumForce * DeltaTime);
+
+			CurrentForwardMomentumForce -= BaseForwardMomentumForce * DeltaTime; // Decay over 1 second
+		}
+
+
 		// To slowly pull the player toward the hook as he swings
-		float ReelInSpeed = 300.0f;
+		float ReelInSpeed = 600.0f;
+		float DistanceToHook = FVector::Dist(GetActorLocation(), GrappleHookLocation);
+		if (DistanceToHook < (CurrentRopeLength - 200.f)) ReelInSpeed = 0.f;
+
 		TangentVelocity += HookDirection * ReelInSpeed;
 
-
 		GetCharacterMovement()->Velocity = TangentVelocity;
-
-		// detache if too close
-		float DistanceToHook = FVector::Dist(GetActorLocation(), GrappleHookLocation);
-		if (DistanceToHook < 150.0f)
-		{
-			StopGrappling();
-		}
+		OnUpdateGrappleRope(GetActorLocation(), GrappleHookLocation);
 	}
 }
 
@@ -188,7 +264,6 @@ void AMyCharacter::UpdateGrappleTarget()
 		CurrentGrappleTarget = nullptr;
 	}
 }
-
 #pragma endregion
 
 #pragma region Dash System
@@ -203,7 +278,7 @@ void AMyCharacter::Dash()
 
 	DashStartLocation = GetActorLocation();
 	PreviousDashLocation = DashStartLocation - 2.1f;
-	DashDirection = FirstPersonCameraComponent->GetForwardVector();
+	DashDirection = this->GetActorForwardVector();
 
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 }
