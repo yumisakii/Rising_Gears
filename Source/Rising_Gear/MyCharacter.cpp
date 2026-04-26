@@ -181,7 +181,8 @@ void AMyCharacter::ShootGrapplingHook()
 		FVector VerticalPop = FVector(0.f, 0.f, 400.0f);
 		GetCharacterMovement()->Velocity += (ForwardDirection * InitialGrappleBoost) + VerticalPop;
 
-		CurrentForwardMomentumForce = BaseForwardMomentumForce;
+		
+		CurrentForwardMomentumForce = BaseForwardMomentumForce + (CurrentRopeLength * 0.8f);
 
 		if (GrappleRopeClass)
 		{
