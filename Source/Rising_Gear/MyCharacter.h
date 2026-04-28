@@ -23,6 +23,12 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Grappling")
 	void OnUpdateGrappleRope(FVector StartLocation, FVector EndLocation);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Grappling")
+	void OnLaunchGrappleRope();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Grappling")
+	void OnStopGrappling();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -61,7 +67,7 @@ protected:
 
 	float CurrentRopeLength;
 	
-	float BaseForwardMomentumForce = 1000.f;
+	float BaseForwardMomentumForce = 100.f;
 	float CurrentForwardMomentumForce;
 
 	bool PerformGrappleSweep(FHitResult& OutHitResult, FVector& OutStartLocation, FVector& OutEndLocation);

@@ -47,6 +47,7 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(ShootGrapplingHookAction, ETriggerEvent::Started, this, &AMyCharacter::ShootGrapplingHook);
+		EnhancedInputComponent->BindAction(ShootGrapplingHookAction, ETriggerEvent::Completed, this, &AMyCharacter::StopGrappling);
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &AMyCharacter::Dash);
 	}
 }
@@ -168,7 +169,7 @@ void AMyCharacter::ShootGrapplingHook()
 		UGameplayStatics::PlaySound2D(GetWorld(), GrappleShootSound);
 
 		bIsGrappling = true;
-		GrappleHookLocation = HitResult.ImpactPoint;
+		GrappleHookLocation = HitResult.GetComponent()->GetComponentLocation();
 		CurrentRopeLength = FVector::Distance(GetActorLocation(), GrappleHookLocation);
 
 		// visuals
@@ -185,7 +186,8 @@ void AMyCharacter::ShootGrapplingHook()
 		FVector VerticalPop = FVector(0.f, 0.f, 400.0f);
 		GetCharacterMovement()->Velocity += (ForwardDirection * InitialGrappleBoost) + VerticalPop;
 
-		CurrentForwardMomentumForce = BaseForwardMomentumForce;
+		
+		CurrentForwardMomentumForce = BaseForwardMomentumForce + (CurrentRopeLength * 0.8f);
 
 		if (GrappleRopeClass)
 		{
@@ -194,6 +196,7 @@ void AMyCharacter::ShootGrapplingHook()
 
 			CurrentGrappleRope = GetWorld()->SpawnActor<AActor>(GrappleRopeClass, GetActorLocation(), FRotator::ZeroRotator);
 		}
+		OnLaunchGrappleRope();
 	}
 }
 
@@ -203,6 +206,8 @@ void AMyCharacter::StopGrappling()
 	{
 		bIsGrappling = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+		
+		OnStopGrappling();
 
 		//visuals
 		if (CurrentGrappleRope)
@@ -279,7 +284,7 @@ void AMyCharacter::Dash()
 
 	DashStartLocation = GetActorLocation();
 	PreviousDashLocation = DashStartLocation - 2.1f;
-	DashDirection = FirstPersonCameraComponent->GetForwardVector();
+	DashDirection = this->GetActorForwardVector();
 
 	UGameplayStatics::PlaySound2D(GetWorld(), DashSound);
 
