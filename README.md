@@ -7,6 +7,9 @@
 ## Overview
 A first-person factory puzzle game built in Unreal Engine. The player controls Zola, navigating through massive, complex industrial environments. The core of the experience is built around a dynamic grappling hook mechanic, allowing players to build momentum and seamlessly swing across wide gaps and hazards to progress through the factory.
 
+## Project Context
+This game was developed in a single month as a third-year school project at G.Tech. The core design and mechanics were driven by a set of randomly assigned constraints. The team was challenged to build a fast-paced, "nervous" first-person platformer set in a Belle Époque theme, with the strict requirement that levels must be designed to be completed in under one minute.
+
 ## Core Features
 * **Momentum-Based Swinging:** Master the grappling hook to swing through the air, utilizing physics and momentum to traverse the factory floor.
 * **Environmental Puzzles:** Interact with dynamic world elements, including rising water hazards, moving platforms, and physical puzzles that require precise timing and movement.
