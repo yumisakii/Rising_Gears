@@ -1,7 +1,7 @@
 # Rising Gear
 
 <a href="https://vimeo.com/1188392499?fl=pl&fe=sh">
-  <img src="https://github.com/user-attachments/assets/f927b1ab-f05c-470b-8b06-26ed2874767f" width="640" alt="Watch the video" />
+  <img src="https://github.com/user-attachments/assets/223d8dc2-1406-42d3-b882-bb5e4cd4038c" width="640" alt="Watch the video" />
 </a>
 
 ## Overview
