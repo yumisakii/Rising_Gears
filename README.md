@@ -3,8 +3,7 @@
 
 # Rising Gear
 
-[![Watch the video](<img width="1280" height="720" alt="thumb" src="https://github.com/user-attachments/assets/f927b1ab-f05c-470b-8b06-26ed2874767f" />
-)]((https://vimeo.com/1188392499?fl=pl&fe=sh))
+[![Watch the video](assets/f927b1ab-f05c-470b-8b06-26ed2874767f)]((https://vimeo.com/1188392499?fl=pl&fe=sh))
 
 ## Overview
 A first-person factory puzzle game built in Unreal Engine. The player controls Zola, navigating through massive, complex industrial environments. The core of the experience is built around a dynamic grappling hook mechanic, allowing players to build momentum and seamlessly swing across wide gaps and hazards to progress through the factory.
