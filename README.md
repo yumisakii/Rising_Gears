@@ -1,3 +1,4 @@
+<img width="1280" height="720" alt="thumb" src="https://github.com/user-attachments/assets/1058eae2-62ba-4630-a79f-dc736ab4c5d6" />
 
 
 # Rising Gear
