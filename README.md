@@ -3,7 +3,6 @@
 ## Overview
 A fast-paced first-person factory platformer game set in a Belle Époque theme, built from scratch in a strict one-month production cycle. The core experience is driven by a custom C++ grappling hook and momentum-based traversal system, challenging players to chain swings, dashes, and jumps to navigate complex industrial hazards in under 60 seconds.
 
-**Gameplay Video:**
 <a href="https://vimeo.com/1188392499?fl=pl&fe=sh">
   <img src="https://github.com/user-attachments/assets/223d8dc2-1406-42d3-b882-bb5e4cd4038c" width="640" alt="Watch the video" />
 </a>
